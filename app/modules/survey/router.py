@@ -1,0 +1,37 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from app.core.database import get_db
+from app.modules.survey import schemas, service
+
+router = APIRouter(prefix="/survey", tags=["Survey"])
+
+@router.post("/enter", response_model=schemas.EnterOut)
+def enter(payload: schemas.EnterIn, db: Session = Depends(get_db)):
+    user_id = service.enter_with_email(db, payload.email)
+    return {"user_id": user_id}
+
+@router.get("/questions/next", response_model=schemas.NextQuestionOut)
+def next_question(user_id: int, db: Session = Depends(get_db)):
+    q = service.get_next_question(db, user_id)
+    if not q:
+        return {"question": None, "done": True}
+    return {"question": {"id": q.id, "text": q.text, "order_index": q.order_index}, "done": False}
+
+@router.post("/answers", response_model=schemas.AnswerOut)
+def answer(payload: schemas.AnswerIn, db: Session = Depends(get_db)):
+    service.save_answer(db, payload.user_id, payload.question_id, payload.answer_value)
+
+    q = service.get_next_question(db, payload.user_id)
+    if not q:
+        return {"saved": True, "next_question": None, "done": True}
+
+    return {
+        "saved": True,
+        "next_question": {"id": q.id, "text": q.text, "order_index": q.order_index},
+        "done": False
+    }
+
+@router.get("/stats")
+def stats(question_id: int, db: Session = Depends(get_db)):
+    return service.stats_for_question(db, question_id)
