@@ -73,3 +73,40 @@ def stats_for_question(db: Session, question_id: int):
         })
 
     return {"question_id": question_id, "total": int(total), "items": items}
+def get_survey_state(db: Session, user_id: int):
+    # total de perguntas ativas
+    total_active = db.execute(
+        select(func.count(Question.id)).where(Question.active == True)  # noqa: E712
+    ).scalar_one()
+
+    # lista de respondidas (Question + Answer.answer_value)
+    rows = db.execute(
+        select(Question, Answer.answer_value)
+        .join(Answer, Answer.question_id == Question.id)
+        .where(Answer.user_id == user_id)
+        .order_by(Question.order_index.asc())
+    ).all()
+
+    answered = []
+    for q, val in rows:
+        answered.append(
+            {
+                "question": {"id": q.id, "text": q.text, "order_index": q.order_index},
+                "answer_value": val,
+            }
+        )
+
+    # próxima pendente (reutiliza sua função atual)
+    next_q = get_next_question(db, user_id)
+    done = next_q is None
+
+    return {
+        "user_id": user_id,
+        "answered_count": len(answered),
+        "total_active": int(total_active),
+        "answered": answered,
+        "next_question": None
+        if done
+        else {"id": next_q.id, "text": next_q.text, "order_index": next_q.order_index},
+        "done": done,
+    }
