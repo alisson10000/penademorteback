@@ -24,7 +24,7 @@ def next_question(user_id: int, db: Session = Depends(get_db)):
         return {"question": None, "done": True}
 
     return {
-        "question": {"id": q.id, "text": q.text, "order_index": q.order_index},
+        "question": service.question_to_dict(q),  # ✅ agora inclui content
         "done": False,
     }
 
@@ -39,7 +39,7 @@ def answer(payload: schemas.AnswerIn, db: Session = Depends(get_db)):
 
     return {
         "saved": True,
-        "next_question": {"id": q.id, "text": q.text, "order_index": q.order_index},
+        "next_question": service.question_to_dict(q),  # ✅ agora inclui content
         "done": False,
     }
 

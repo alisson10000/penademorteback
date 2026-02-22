@@ -2,8 +2,38 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, func
 from app.modules.survey.models import User, Question, Answer
 
+
 def normalize_email(email: str) -> str:
     return email.strip().lower()
+
+
+def ensure_content(q: Question):
+    """
+    Garante que sempre exista content no formato lista de segmentos.
+    - Se q.content existir (JSON), usa ele.
+    - Se não existir (NULL), cria fallback com o text inteiro.
+    """
+    if q is None:
+        return None
+
+    if q.content:
+        return q.content
+
+    return [{"text": q.text}]
+
+
+def question_to_dict(q: Question) -> dict:
+    """
+    Retorno padronizado para QuestionOut (agora com content).
+    Mantém text por compatibilidade.
+    """
+    return {
+        "id": q.id,
+        "text": q.text,
+        "order_index": q.order_index,
+        "content": ensure_content(q),
+    }
+
 
 def enter_with_email(db: Session, email: str) -> int:
     email = normalize_email(email)
@@ -18,6 +48,7 @@ def enter_with_email(db: Session, email: str) -> int:
     db.refresh(user)
     return user.id
 
+
 def get_next_question(db: Session, user_id: int):
     # Próxima pergunta ativa que ainda não foi respondida pelo user_id
     subq = select(Answer.question_id).where(Answer.user_id == user_id)
@@ -31,6 +62,7 @@ def get_next_question(db: Session, user_id: int):
     ).scalar_one_or_none()
 
     return q
+
 
 def save_answer(db: Session, user_id: int, question_id: int, answer_value: str) -> None:
     # Upsert: se já existe resposta, atualiza
@@ -47,6 +79,7 @@ def save_answer(db: Session, user_id: int, question_id: int, answer_value: str) 
         db.add(Answer(user_id=user_id, question_id=question_id, answer_value=answer_value))
 
     db.commit()
+
 
 def stats_for_question(db: Session, question_id: int):
     # Retorna totais e percentuais de yes/no
@@ -73,6 +106,8 @@ def stats_for_question(db: Session, question_id: int):
         })
 
     return {"question_id": question_id, "total": int(total), "items": items}
+
+
 def get_survey_state(db: Session, user_id: int):
     # total de perguntas ativas
     total_active = db.execute(
@@ -91,12 +126,12 @@ def get_survey_state(db: Session, user_id: int):
     for q, val in rows:
         answered.append(
             {
-                "question": {"id": q.id, "text": q.text, "order_index": q.order_index},
+                "question": question_to_dict(q),
                 "answer_value": val,
             }
         )
 
-    # próxima pendente (reutiliza sua função atual)
+    # próxima pendente
     next_q = get_next_question(db, user_id)
     done = next_q is None
 
@@ -105,8 +140,6 @@ def get_survey_state(db: Session, user_id: int):
         "answered_count": len(answered),
         "total_active": int(total_active),
         "answered": answered,
-        "next_question": None
-        if done
-        else {"id": next_q.id, "text": next_q.text, "order_index": next_q.order_index},
+        "next_question": None if done else question_to_dict(next_q),
         "done": done,
     }
