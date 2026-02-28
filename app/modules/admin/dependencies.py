@@ -24,3 +24,11 @@ def get_current_admin(
             detail="Not authenticated",
         )
     return admin
+
+# ✅ ADICIONE ISTO
+def require_admin(admin: Admin = Depends(get_current_admin)) -> Admin:
+    """
+    Dependência semântica: deixa explícito que a rota exige admin autenticado.
+    Se no futuro você tiver roles, pode validar aqui.
+    """
+    return admin

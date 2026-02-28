@@ -18,7 +18,7 @@ from app.modules.admin.service import (
 )
 from app.modules.admin.dependencies import get_current_admin
 
-router = APIRouter(prefix="/api/admin", tags=["Admin"])
+router = APIRouter(prefix="/admin", tags=["Admin"])
 
 
 @router.post("/auth/login", response_model=TokenOut)

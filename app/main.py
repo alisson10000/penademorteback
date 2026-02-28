@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,11 +9,18 @@ import app.db.base  # noqa: F401
 
 from app.modules.survey.router import router as survey_router
 from app.modules.admin.router import router as admin_router
+from app.modules.stats.router import router as stats_router
 
+
+# ✅ Em produção atrás do Caddy em /api/*:
+#   export ROOT_PATH=/api
+# ✅ Em dev local:
+#   ROOT_PATH vazio (padrão) para não gerar /api/api
+ROOT_PATH = os.getenv("ROOT_PATH", "")
 
 app = FastAPI(
     title="PenaDeMorte API",
-    root_path="/api",  # ✅ essencial atrás do Caddy em /api/*
+    root_path=ROOT_PATH,
 )
 
 origins = [
@@ -30,14 +39,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ✅ mantém como está no seu projeto
 Base.metadata.create_all(bind=engine)
 
+# ✅ mantém como está no seu projeto (preserva o que já funciona)
 app.include_router(survey_router)
 app.include_router(admin_router)
 
+# ✅ CORRETO: inclui o stats_router no app (não existe api_router aqui)
+# Observação: usamos prefix "/admin/stats" (sem /api) porque em produção o root_path já será "/api"
+# e em dev local você continua acessando /admin/stats (ou, se seus routers já usam /api, me avise)
+app.include_router(
+    stats_router,
+    prefix="/admin/stats",
+    tags=["Admin Stats"],
+)
+
 @app.get("/", include_in_schema=False)
 def root():
-    return RedirectResponse(url="/docs")  # com root_path vira /api/docs automaticamente
+    # ✅ redireciona para o docs respeitando o root_path
+    return RedirectResponse(url=f"{ROOT_PATH}/docs" if ROOT_PATH else "/docs")
 
 @app.get("/health")
 def health():
