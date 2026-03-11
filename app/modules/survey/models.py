@@ -19,7 +19,11 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
 
     # opcional (não quebra): facilita user.answers
-    answers = relationship("Answer", back_populates="user", cascade="all, delete-orphan")
+    answers = relationship(
+        "Answer",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
 
 class Question(Base):
@@ -27,26 +31,41 @@ class Question(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    # ✅ mantém o que já existe e já funciona
+    # mantém o que já existe e já funciona
     text = Column(Text, nullable=False)
 
-    # ✅ novo: rich text em JSON (pode ser NULL para perguntas antigas)
+    # rich text em JSON (pode ser NULL para perguntas antigas)
     # Ex: [{"text":"...", "color":"#0000FF", "bold": true}, ...]
     content = Column(JSON, nullable=True)
 
     active = Column(Boolean, default=True, nullable=False)
     order_index = Column(Integer, default=0, nullable=False)
 
+    # ✅ novo apenas no ORM: lista de ads ligadas a esta pergunta
+    ads = relationship("Ad", back_populates="question")
+
     # opcional (não quebra): facilita question.answers
-    answers = relationship("Answer", back_populates="question", cascade="all, delete-orphan")
+    answers = relationship(
+        "Answer",
+        back_populates="question",
+        cascade="all, delete-orphan",
+    )
 
 
 class Answer(Base):
     __tablename__ = "answers"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    question_id = Column(Integer, ForeignKey("questions.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    question_id = Column(
+        Integer,
+        ForeignKey("questions.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     # "yes" | "no" (ou outros que você usar)
     answer_value = Column(String(3), nullable=False)
@@ -55,6 +74,6 @@ class Answer(Base):
         UniqueConstraint("user_id", "question_id", name="uk_answers_user_question"),
     )
 
-    # ✅ mantém relacionamento funcional, agora com back_populates
+    # mantém relacionamento funcional, agora com back_populates
     user = relationship("User", back_populates="answers")
     question = relationship("Question", back_populates="answers")

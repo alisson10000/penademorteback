@@ -10,11 +10,12 @@ import app.db.base  # noqa: F401
 from app.modules.survey.router import router as survey_router
 from app.modules.admin.router import router as admin_router
 from app.modules.stats.router import router as stats_router
+from app.modules.ads.router import router as ads_router
 
 
-# ✅ Em produção atrás do Caddy em /api/*:
+# Em produção atrás do Caddy em /api/*:
 #   export ROOT_PATH=/api
-# ✅ Em dev local:
+# Em dev local:
 #   ROOT_PATH vazio (padrão) para não gerar /api/api
 ROOT_PATH = os.getenv("ROOT_PATH", "")
 
@@ -39,25 +40,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ✅ mantém como está no seu projeto
+# mantém como está no seu projeto
 Base.metadata.create_all(bind=engine)
 
-# ✅ mantém como está no seu projeto (preserva o que já funciona)
+# routers principais já existentes
 app.include_router(survey_router)
 app.include_router(admin_router)
 
-# ✅ CORRETO: inclui o stats_router no app (não existe api_router aqui)
-# Observação: usamos prefix "/admin/stats" (sem /api) porque em produção o root_path já será "/api"
-# e em dev local você continua acessando /admin/stats (ou, se seus routers já usam /api, me avise)
+# stats router em /admin/stats (ou /api/admin/stats em prod)
 app.include_router(
     stats_router,
     prefix="/admin/stats",
     tags=["Admin Stats"],
 )
 
+# Ads router: acesso em /ads/* (ou /api/ads/* em prod)
+app.include_router(
+    ads_router,
+    prefix="/ads",
+    tags=["Ads"],
+)
+
 @app.get("/", include_in_schema=False)
 def root():
-    # ✅ redireciona para o docs respeitando o root_path
+    # redireciona para o docs respeitando o root_path
     return RedirectResponse(url=f"{ROOT_PATH}/docs" if ROOT_PATH else "/docs")
 
 @app.get("/health")

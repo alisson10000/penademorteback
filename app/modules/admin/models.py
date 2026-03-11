@@ -1,5 +1,6 @@
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy.orm import relationship
 from app.core.database import Base
 
 
@@ -13,7 +14,10 @@ class Admin(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     last_login = Column(DateTime, nullable=True)
-    
-    # ✅ Campos reset (agora compatível com banco)
+
+    # Campos reset (compatível com banco)
     reset_token = Column(String(255), nullable=True, index=True)
     reset_token_expires_at = Column(DateTime, nullable=True)
+
+    # ✅ relação inversa usada em Ad.created_by
+    ads = relationship("Ad", back_populates="created_by")
