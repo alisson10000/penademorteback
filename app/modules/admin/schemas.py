@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Literal
+from datetime import datetime
 
 
 # =========================
@@ -25,8 +26,10 @@ class AdminOut(BaseModel):
     email: EmailStr
     role: str
     is_active: bool
+    # Campos de reset (visíveis só se existirem)
+    reset_token: str | None = None
+    reset_token_expires_at: datetime | None = None
 
-    # Pydantic v2
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -36,11 +39,7 @@ class AdminOut(BaseModel):
 class AdminCreateIn(BaseModel):
     email: EmailStr
     password: str = Field(min_length=6, max_length=72)
-
-    # se você quiser travar os papéis aceitos, use Literal:
-    # role: Literal["admin", "superadmin"] = "admin"
     role: str = Field(default="admin", min_length=3, max_length=50)
-
     is_active: bool = True
 
 
@@ -53,3 +52,19 @@ class AdminMeOut(BaseModel):
     role: str
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# =========================
+# PASSWORD RESET - INPUTS
+# =========================
+class PasswordResetRequestIn(BaseModel):
+    """Para solicitar reset por email"""
+    email: EmailStr
+
+
+class PasswordResetConfirmIn(BaseModel):
+    """Para confirmar reset com token + nova senha"""
+    token: str = Field(min_length=32, max_length=255)
+    password: str = Field(min_length=6, max_length=72)
+
+

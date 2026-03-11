@@ -4,8 +4,8 @@ from app.core.config import DATABASE_URL
 
 engine = create_engine(
     DATABASE_URL,
-    pool_pre_ping=True,   # evita timeout na VPS
-    pool_recycle=3600,    # recicla conexões
+    pool_pre_ping=True,  # ✅ VPS OK
+    pool_recycle=3600,   # ✅ Conexões recicladas
 )
 
 SessionLocal = sessionmaker(
@@ -16,9 +16,16 @@ SessionLocal = sessionmaker(
 
 Base = declarative_base()
 
+# IMPORTA MODELS (você já tem)
+from app.modules.survey.models import User, Question, Answer  # noqa: F401
+from app.modules.admin.models import Admin  # noqa: F401
+
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
+# 🚀 CRIA TUDO NO BANCO!
+Base.metadata.create_all(bind=engine)
