@@ -13,13 +13,13 @@ router = APIRouter(prefix="/survey", tags=["Survey"])
 @router.post("/enter", response_model=schemas.EnterOut)
 def enter(payload: schemas.EnterIn, db: Session = Depends(get_db)):
     userid = service.enter_with_email(db, payload.email)
-    return {"userid": userid}
+    return {"user_id": userid}
 
 
 @router.get("/questions", response_model=List[schemas.QuestionOut])
 def list_all_questions(db: Session = Depends(get_db)):
     """
-    ✅ NOVO: Lista TODAS as perguntas para admin/dropdown
+    Lista TODAS as perguntas para admin/dropdown
     """
     questions = db.query(Question).order_by(Question.order_index).all()
     return [service.question_to_dict(q) for q in questions]
@@ -35,11 +35,11 @@ def next_question(userid: int, db: Session = Depends(get_db)):
 
 @router.post("/answers", response_model=schemas.AnswerOut)
 def answer(payload: schemas.AnswerIn, db: Session = Depends(get_db)):
-    service.save_answer(db, payload.userid, payload.questionid, payload.answervalue)
-    q = service.get_next_question(db, payload.userid)
+    service.save_answer(db, payload.user_id, payload.question_id, payload.answer_value)  # ✅ CORRIGIDO
+    q = service.get_next_question(db, payload.user_id)  # ✅ CORRIGIDO
     if not q:
-        return {"saved": True, "nextquestion": None, "done": True}
-    return {"saved": True, "nextquestion": service.question_to_dict(q), "done": False}
+        return {"saved": True, "next_question": None, "done": True}
+    return {"saved": True, "next_question": service.question_to_dict(q), "done": False}
 
 
 @router.get("/stats")
