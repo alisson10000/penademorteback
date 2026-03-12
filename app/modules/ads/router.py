@@ -7,7 +7,7 @@ from app.modules.admin.dependencies import get_current_admin
 from . import schemas, service
 
 
-router = APIRouter(prefix="/ads", tags=["Ads"])
+router = APIRouter( tags=["Ads"])
 
 
 # ===========================
