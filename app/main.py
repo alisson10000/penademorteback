@@ -26,7 +26,7 @@ origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "https://srv1399917.hstgr.cloud",
-    "https://penademorte.org",  # ✅ Adicione o domínio de prod
+    "https://penademorte.org",
 ]
 
 app.add_middleware(
@@ -39,22 +39,20 @@ app.add_middleware(
 
 Base.metadata.create_all(bind=engine)
 
-# routers
-app.include_router(survey_router)
-app.include_router(admin_router)
-app.include_router(stats_router, prefix="/admin/stats", tags=["Admin Stats"])
-app.include_router(ads_router, prefix="/ads", tags=["Ads"])
-
-# ✅ Static files - DEPOIS dos routers
+# ✅ Static files - IMEDIATAMENTE após criar app, ANTES de routers
 static_path = os.path.join(os.path.dirname(__file__), "static")
 print(f"📁 Static path: {static_path}")
 print(f"📁 Existe? {os.path.exists(static_path)}")
 
-if os.path.exists(static_path):
-    app.mount("/static", StaticFiles(directory=static_path), name="static")
-    print("✅ Static files montado em /static")
-else:
-    print("⚠️ Pasta static não encontrada!")
+# SEMPRE monta, sem if
+app.mount("/static", StaticFiles(directory=static_path), name="static")
+print("✅ Static files montado")
+
+# Routers DEPOIS do mount
+app.include_router(survey_router)
+app.include_router(admin_router)
+app.include_router(stats_router, prefix="/admin/stats", tags=["Admin Stats"])
+app.include_router(ads_router, prefix="/ads", tags=["Ads"])
 
 @app.get("/", include_in_schema=False)
 def root():
