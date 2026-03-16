@@ -6,14 +6,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.core.database import Base, engine
-import app.db.base  # noqa: F401
+import app.db.base  # noqa
 
 from app.modules.survey.router import router as survey_router
 from app.modules.admin.router import router as admin_router
 from app.modules.stats.router import router as stats_router
 from app.modules.ads.router import router as ads_router
 
+
 ROOT_PATH = os.getenv("ROOT_PATH", "")
+
+STATIC_DIR = os.getenv("STATIC_DIR", "/opt/penademorteback/static")
 
 app = FastAPI(
     title="PenaDeMorte API",
@@ -39,31 +42,31 @@ app.add_middleware(
 
 Base.metadata.create_all(bind=engine)
 
-# Static files
-static_path = "/opt/penademorteback/static"
-print(f"📁 Static path: {static_path}")
-print(f"📁 Existe? {os.path.exists(static_path)}")
+print(f"📁 Static path: {STATIC_DIR}")
+print(f"📁 Existe? {os.path.exists(STATIC_DIR)}")
 
-app.mount("/static", StaticFiles(directory=static_path), name="static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
 print("✅ Static montado")
 
-# Lista vídeos para debug
-videos_path = os.path.join(static_path, "videos")
+videos_path = os.path.join(STATIC_DIR, "videos")
+
 if os.path.exists(videos_path):
     videos = os.listdir(videos_path)
     print(f"📹 Vídeos na pasta: {videos}")
 else:
     print(f"⚠️ Pasta videos não existe em {videos_path}")
 
-# Routers
 app.include_router(survey_router)
 app.include_router(admin_router)
 app.include_router(stats_router, prefix="/admin/stats", tags=["Admin Stats"])
 app.include_router(ads_router, prefix="/ads", tags=["Ads"])
 
+
 @app.get("/", include_in_schema=False)
 def root():
     return RedirectResponse(url=f"{ROOT_PATH}/docs" if ROOT_PATH else "/docs")
+
 
 @app.get("/health")
 def health():

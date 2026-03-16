@@ -4,14 +4,14 @@ from datetime import datetime
 
 
 class AdBase(BaseModel):
-    tipo: str  # 'image', 'youtube' ou 'video'
+    tipo: str
     url: str
     link: Optional[str] = None
     question_id: int
 
 
 class AdCreate(AdBase):
-    created_by_id: int
+    pass
 
 
 class AdUpdate(BaseModel):
