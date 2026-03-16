@@ -4,14 +4,14 @@ from datetime import datetime
 
 
 class AdBase(BaseModel):
-    tipo: str  # 'imagem' ou 'youtube'
+    tipo: str  # 'image', 'youtube' ou 'video'
     url: str
     link: Optional[str] = None
-    question_id: int  # ✅ FK da pergunta dona da ad
+    question_id: int
 
 
 class AdCreate(AdBase):
-    created_by_id: int  # ID admin logado (injetado no service/router)
+    created_by_id: int
 
 
 class AdUpdate(BaseModel):
@@ -19,14 +19,14 @@ class AdUpdate(BaseModel):
     url: Optional[str] = None
     link: Optional[str] = None
     ativo: Optional[bool] = None
-    question_id: Optional[int] = None  # permite trocar de pergunta (ou deixar igual)
+    question_id: Optional[int] = None
 
 
 class Ad(AdBase):
     id: int
     ativo: bool
     created_at: datetime
-    created_by_id: int  # Visível na resposta
+    created_by_id: int
 
     class Config:
         from_attributes = True

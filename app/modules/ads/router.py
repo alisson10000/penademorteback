@@ -1,13 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List
+import shutil
+from pathlib import Path
 
 from app.core.database import get_db
 from app.modules.admin.dependencies import get_current_admin
 from . import schemas, service
 
-
-router = APIRouter( tags=["Ads"])
+router = APIRouter(tags=["Ads"])
 
 
 # ===========================
@@ -99,3 +100,96 @@ def delete_ad(
     if not deleted:
         raise HTTPException(status_code=404, detail="Ad not found")
     return None
+
+
+# ===========================
+# UPLOAD - COM AUTENTICAÇÃO
+# ===========================
+@router.post("/upload-video")
+async def upload_video(
+    file: UploadFile = File(...),
+    current_admin=Depends(get_current_admin),
+):
+    """
+    Upload de vídeo MP4 para /static/videos/
+    Retorna a URL pública do vídeo
+    """
+    # Valida tipo de arquivo
+    if not file.content_type or not file.content_type.startswith("video/"):
+        raise HTTPException(
+            status_code=400,
+            detail="Arquivo deve ser um vídeo (MP4, MOV, etc.)"
+        )
+    
+    # Caminho onde salvar
+    static_dir = Path(__file__).parent.parent.parent / "static" / "videos"
+    static_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Nome do arquivo (sanitiza para evitar problemas)
+    filename = file.filename.replace(" ", "_")
+    file_path = static_dir / filename
+    
+    # Salvar arquivo
+    try:
+        with file_path.open("wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao salvar arquivo: {str(e)}"
+        )
+    
+    # URL pública
+    url = f"/static/videos/{filename}"
+    
+    return {
+        "url": url,
+        "filename": filename,
+        "size": file_path.stat().st_size,
+        "content_type": file.content_type,
+    }
+
+
+@router.post("/upload-image")
+async def upload_image(
+    file: UploadFile = File(...),
+    current_admin=Depends(get_current_admin),
+):
+    """
+    Upload de imagem para /static/images/
+    Retorna a URL pública da imagem
+    """
+    # Valida tipo de arquivo
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=400,
+            detail="Arquivo deve ser uma imagem (JPG, PNG, etc.)"
+        )
+    
+    # Caminho onde salvar
+    static_dir = Path(__file__).parent.parent.parent / "static" / "images"
+    static_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Nome do arquivo
+    filename = file.filename.replace(" ", "_")
+    file_path = static_dir / filename
+    
+    # Salvar arquivo
+    try:
+        with file_path.open("wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao salvar arquivo: {str(e)}"
+        )
+    
+    # URL pública
+    url = f"/static/images/{filename}"
+    
+    return {
+        "url": url,
+        "filename": filename,
+        "size": file_path.stat().st_size,
+        "content_type": file.content_type,
+    }

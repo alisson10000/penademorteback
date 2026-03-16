@@ -3,6 +3,7 @@ import os
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.core.database import Base, engine
 import app.db.base  # noqa: F401
@@ -11,7 +12,6 @@ from app.modules.survey.router import router as survey_router
 from app.modules.admin.router import router as admin_router
 from app.modules.stats.router import router as stats_router
 from app.modules.ads.router import router as ads_router
-
 
 # Em produção atrás do Caddy em /api/*:
 #   export ROOT_PATH=/api
@@ -60,6 +60,11 @@ app.include_router(
     prefix="/ads",
     tags=["Ads"],
 )
+
+# ✅ NOVO: Servir arquivos estáticos (vídeos e imagens)
+static_path = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(static_path):
+    app.mount("/static", StaticFiles(directory=static_path), name="static")
 
 @app.get("/", include_in_schema=False)
 def root():
