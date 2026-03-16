@@ -43,6 +43,11 @@ app.add_middleware(
 # mantém como está no seu projeto
 Base.metadata.create_all(bind=engine)
 
+# ✅ MOVER PARA AQUI: Servir arquivos estáticos ANTES dos routers
+static_path = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(static_path):
+    app.mount("/static", StaticFiles(directory=static_path), name="static")
+
 # routers principais já existentes
 app.include_router(survey_router)
 app.include_router(admin_router)
@@ -60,11 +65,6 @@ app.include_router(
     prefix="/ads",
     tags=["Ads"],
 )
-
-# ✅ NOVO: Servir arquivos estáticos (vídeos e imagens)
-static_path = os.path.join(os.path.dirname(__file__), "static")
-if os.path.exists(static_path):
-    app.mount("/static", StaticFiles(directory=static_path), name="static")
 
 @app.get("/", include_in_schema=False)
 def root():
