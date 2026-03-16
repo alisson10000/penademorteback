@@ -39,22 +39,13 @@ app.add_middleware(
 
 Base.metadata.create_all(bind=engine)
 
-# ✅ Static files com caminho absoluto
-static_path = "/opt/penademorteback/app/static"
+# ✅ Static fora de app/ agora
+static_path = "/opt/penademorteback/static"
 print(f"📁 Static path: {static_path}")
 print(f"📁 Existe? {os.path.exists(static_path)}")
 
-if os.path.exists(static_path):
-    app.mount("/static", StaticFiles(directory=static_path), name="static")
-    print("✅ Static files montado em /static")
-    
-    # Lista arquivos para debug
-    videos_path = os.path.join(static_path, "videos")
-    if os.path.exists(videos_path):
-        videos = os.listdir(videos_path)
-        print(f"📹 Vídeos encontrados: {videos}")
-else:
-    print("⚠️ Pasta static não encontrada!")
+app.mount("/static", StaticFiles(directory=static_path), name="static")
+print("✅ Static montado")
 
 # Routers
 app.include_router(survey_router)

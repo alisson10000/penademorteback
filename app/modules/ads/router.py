@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 import shutil
 from pathlib import Path
+import re
 
 from app.core.database import get_db
 from app.modules.admin.dependencies import get_current_admin
@@ -114,32 +115,35 @@ async def upload_video(
     Upload de vídeo MP4 para /static/videos/
     Retorna a URL pública do vídeo
     """
-    # Valida tipo de arquivo
     if not file.content_type or not file.content_type.startswith("video/"):
         raise HTTPException(
             status_code=400,
             detail="Arquivo deve ser um vídeo (MP4, MOV, etc.)"
         )
     
-    # Caminho onde salvar
-    static_dir = Path(__file__).parent.parent.parent / "static" / "videos"
+    # ✅ Caminho absoluto (static movida para fora de app/)
+    static_dir = Path("/opt/penademorteback/static/videos")
     static_dir.mkdir(parents=True, exist_ok=True)
     
-    # Nome do arquivo (sanitiza para evitar problemas)
+    # ✅ Sanitiza nome: remove espaços e caracteres especiais
     filename = file.filename.replace(" ", "_")
+    filename = re.sub(r'[^a-zA-Z0-9._-]', '', filename)
+    
     file_path = static_dir / filename
     
-    # Salvar arquivo
+    print(f"📁 Salvando vídeo em: {file_path}")
+    
     try:
         with file_path.open("wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
+        print(f"✅ Vídeo salvo: {file_path}")
     except Exception as e:
+        print(f"❌ Erro ao salvar: {e}")
         raise HTTPException(
             status_code=500,
             detail=f"Erro ao salvar arquivo: {str(e)}"
         )
     
-    # URL pública
     url = f"/static/videos/{filename}"
     
     return {
@@ -159,32 +163,35 @@ async def upload_image(
     Upload de imagem para /static/images/
     Retorna a URL pública da imagem
     """
-    # Valida tipo de arquivo
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(
             status_code=400,
             detail="Arquivo deve ser uma imagem (JPG, PNG, etc.)"
         )
     
-    # Caminho onde salvar
-    static_dir = Path(__file__).parent.parent.parent / "static" / "images"
+    # ✅ Caminho absoluto
+    static_dir = Path("/opt/penademorteback/static/images")
     static_dir.mkdir(parents=True, exist_ok=True)
     
-    # Nome do arquivo
+    # ✅ Sanitiza nome
     filename = file.filename.replace(" ", "_")
+    filename = re.sub(r'[^a-zA-Z0-9._-]', '', filename)
+    
     file_path = static_dir / filename
     
-    # Salvar arquivo
+    print(f"📁 Salvando imagem em: {file_path}")
+    
     try:
         with file_path.open("wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
+        print(f"✅ Imagem salva: {file_path}")
     except Exception as e:
+        print(f"❌ Erro ao salvar: {e}")
         raise HTTPException(
             status_code=500,
             detail=f"Erro ao salvar arquivo: {str(e)}"
         )
     
-    # URL pública
     url = f"/static/images/{filename}"
     
     return {
