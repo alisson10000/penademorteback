@@ -13,10 +13,6 @@ from app.modules.admin.router import router as admin_router
 from app.modules.stats.router import router as stats_router
 from app.modules.ads.router import router as ads_router
 
-# Em produção atrás do Caddy em /api/*:
-#   export ROOT_PATH=/api
-# Em dev local:
-#   ROOT_PATH vazio (padrão) para não gerar /api/api
 ROOT_PATH = os.getenv("ROOT_PATH", "")
 
 app = FastAPI(
@@ -30,6 +26,7 @@ origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "https://srv1399917.hstgr.cloud",
+    "https://penademorte.org",  # ✅ Adicione o domínio de prod
 ]
 
 app.add_middleware(
@@ -40,35 +37,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# mantém como está no seu projeto
 Base.metadata.create_all(bind=engine)
 
-# ✅ MOVER PARA AQUI: Servir arquivos estáticos ANTES dos routers
-static_path = os.path.join(os.path.dirname(__file__), "static")
-if os.path.exists(static_path):
-    app.mount("/static", StaticFiles(directory=static_path), name="static")
-
-# routers principais já existentes
+# routers
 app.include_router(survey_router)
 app.include_router(admin_router)
+app.include_router(stats_router, prefix="/admin/stats", tags=["Admin Stats"])
+app.include_router(ads_router, prefix="/ads", tags=["Ads"])
 
-# stats router em /admin/stats (ou /api/admin/stats em prod)
-app.include_router(
-    stats_router,
-    prefix="/admin/stats",
-    tags=["Admin Stats"],
-)
+# ✅ Static files - DEPOIS dos routers
+static_path = os.path.join(os.path.dirname(__file__), "static")
+print(f"📁 Static path: {static_path}")
+print(f"📁 Existe? {os.path.exists(static_path)}")
 
-# Ads router: acesso em /ads/* (ou /api/ads/* em prod)
-app.include_router(
-    ads_router,
-    prefix="/ads",
-    tags=["Ads"],
-)
+if os.path.exists(static_path):
+    app.mount("/static", StaticFiles(directory=static_path), name="static")
+    print("✅ Static files montado em /static")
+else:
+    print("⚠️ Pasta static não encontrada!")
 
 @app.get("/", include_in_schema=False)
 def root():
-    # redireciona para o docs respeitando o root_path
     return RedirectResponse(url=f"{ROOT_PATH}/docs" if ROOT_PATH else "/docs")
 
 @app.get("/health")
