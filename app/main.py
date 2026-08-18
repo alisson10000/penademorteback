@@ -28,8 +28,14 @@ origins = [
     "http://127.0.0.1:5173",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+
+    # Front acessado diretamente pelo IP da VPS
+    "http://177.153.66.136:3000",
+
+    # Domínios
     "https://srv1399917.hstgr.cloud",
     "https://penademorte.org",
+    "https://www.penademorte.org",
 ]
 
 app.add_middleware(
@@ -45,7 +51,11 @@ Base.metadata.create_all(bind=engine)
 print(f"📁 Static path: {STATIC_DIR}")
 print(f"📁 Existe? {os.path.exists(STATIC_DIR)}")
 
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+app.mount(
+    "/static",
+    StaticFiles(directory=STATIC_DIR),
+    name="static",
+)
 
 print("✅ Static montado")
 
@@ -59,13 +69,23 @@ else:
 
 app.include_router(survey_router)
 app.include_router(admin_router)
-app.include_router(stats_router, prefix="/admin/stats", tags=["Admin Stats"])
-app.include_router(ads_router, prefix="/ads", tags=["Ads"])
+app.include_router(
+    stats_router,
+    prefix="/admin/stats",
+    tags=["Admin Stats"],
+)
+app.include_router(
+    ads_router,
+    prefix="/ads",
+    tags=["Ads"],
+)
 
 
 @app.get("/", include_in_schema=False)
 def root():
-    return RedirectResponse(url=f"{ROOT_PATH}/docs" if ROOT_PATH else "/docs")
+    return RedirectResponse(
+        url=f"{ROOT_PATH}/docs" if ROOT_PATH else "/docs"
+    )
 
 
 @app.get("/health")
